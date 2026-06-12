@@ -5,6 +5,7 @@ import { FlatList, Pressable, Text, View } from 'react-native';
 
 import { UpdateMileageModal } from '@/components/assets/UpdateMileageModal';
 import { CompleteTaskModal } from '@/components/tasks/CompleteTaskModal';
+import { Button } from '@/components/ui/Button';
 import { LoadingScreen } from '@/components/ui/LoadingScreen';
 import { Screen } from '@/components/ui/Screen';
 import { TaskListItem } from '@/components/tasks/TaskListItem';
@@ -85,7 +86,16 @@ export default function AssetDetailScreen() {
           </Pressable>
         ) : null}
 
-        <Text className="mb-2 mt-6 text-lg font-semibold text-neutral-900 dark:text-white">Maintenance</Text>
+        <View className="mb-2 mt-6 flex-row items-center justify-between">
+          <Text className="text-lg font-semibold text-neutral-900 dark:text-white">Maintenance</Text>
+          <Pressable
+            onPress={() => router.push(`/task/new?assetId=${asset.id}`)}
+            accessibilityRole="button"
+            className="rounded-lg bg-brand-600/10 px-3 py-1.5 active:bg-brand-600/20"
+          >
+            <Text className="text-sm font-semibold text-brand-600 dark:text-brand-400">+ Add task</Text>
+          </Pressable>
+        </View>
       </View>
 
       <FlatList
@@ -96,12 +106,14 @@ export default function AssetDetailScreen() {
           <TaskListItem
             task={item.task}
             dueInfo={item.dueInfo}
+            onPress={() => router.push(`/task/${item.task.id}`)}
             onComplete={() => setTaskToComplete(item.task)}
           />
         )}
         ListEmptyComponent={
           <View className="items-center py-12">
-            <Text className="text-base text-neutral-500 dark:text-neutral-400">No maintenance tasks yet.</Text>
+            <Text className="mb-4 text-base text-neutral-500 dark:text-neutral-400">No maintenance tasks yet.</Text>
+            <Button label="Add a task" onPress={() => router.push(`/task/new?assetId=${asset.id}`)} />
           </View>
         }
       />
