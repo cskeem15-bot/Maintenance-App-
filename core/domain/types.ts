@@ -88,3 +88,21 @@ export interface HouseholdMembership {
   userId: string;
   role: HouseholdRole;
 }
+
+export interface Household {
+  id: string;
+  name: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Profile {
+  id: string;
+  displayName?: string;
+  avatarUrl?: string;
+  timezone: string;
+  notificationLeadTimeMinutes: number;
+  quietHoursStart?: string;
+  quietHoursEnd?: string;
+}
