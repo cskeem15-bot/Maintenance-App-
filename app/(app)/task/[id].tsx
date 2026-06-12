@@ -7,6 +7,7 @@ import { TaskForm } from '@/components/tasks/TaskForm';
 import { Button } from '@/components/ui/Button';
 import { LoadingScreen } from '@/components/ui/LoadingScreen';
 import { Screen } from '@/components/ui/Screen';
+import { hasPermission } from '@/core/domain/permissions';
 import { useDatabase } from '@/lib/db/DatabaseProvider';
 import { getAsset } from '@/lib/db/repositories/assets';
 import { deleteTask, getTask } from '@/lib/db/repositories/maintenanceTasks';
@@ -15,7 +16,8 @@ import { queryKeys } from '@/lib/query/keys';
 
 export default function EditTaskScreen() {
   const db = useDatabase();
-  const { householdId, sync } = useHousehold();
+  const { householdId, role, sync } = useHousehold();
+  const canDeleteTask = !!role && hasPermission(role, 'task:delete');
   const queryClient = useQueryClient();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -77,9 +79,11 @@ export default function EditTaskScreen() {
         </Text>
       ) : null}
 
-      <View className="mt-6">
-        <Button label="Delete task" variant="destructive" onPress={() => removeTask.mutate()} loading={removeTask.isPending} />
-      </View>
+      {canDeleteTask ? (
+        <View className="mt-6">
+          <Button label="Delete task" variant="destructive" onPress={() => removeTask.mutate()} loading={removeTask.isPending} />
+        </View>
+      ) : null}
     </Screen>
   );
 }

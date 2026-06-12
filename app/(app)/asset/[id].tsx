@@ -11,18 +11,26 @@ import { Screen } from '@/components/ui/Screen';
 import { TaskListItem } from '@/components/tasks/TaskListItem';
 import { vehicleDetails } from '@/core/domain/assets';
 import { compareDueInfo, getTaskDueInfo } from '@/core/domain/dueDate';
+import { hasPermission } from '@/core/domain/permissions';
 import type { MaintenanceTask } from '@/core/domain/types';
 import { useDatabase } from '@/lib/db/DatabaseProvider';
 import { getAsset } from '@/lib/db/repositories/assets';
 import { listTasksForAsset } from '@/lib/db/repositories/maintenanceTasks';
 import { assetIcon, formatAssetDetails, formatAssetSubtitle } from '@/lib/format/asset';
+import { useHousehold } from '@/lib/household/HouseholdProvider';
 import { queryKeys } from '@/lib/query/keys';
 
 export default function AssetDetailScreen() {
   const db = useDatabase();
+  const { role } = useHousehold();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [taskToComplete, setTaskToComplete] = useState<MaintenanceTask | null>(null);
   const [isUpdatingMileage, setIsUpdatingMileage] = useState(false);
+
+  const canEditAsset = !!role && hasPermission(role, 'asset:edit');
+  const canCreateTask = !!role && hasPermission(role, 'task:create');
+  const canEditTask = !!role && hasPermission(role, 'task:edit');
+  const canCompleteTask = !!role && hasPermission(role, 'task:complete');
 
   const assetQuery = useQuery({
     queryKey: queryKeys.asset(id),
@@ -76,7 +84,7 @@ export default function AssetDetailScreen() {
           ))}
         </View>
 
-        {vehicle ? (
+        {vehicle && canEditAsset ? (
           <Pressable
             onPress={() => setIsUpdatingMileage(true)}
             accessibilityRole="button"
@@ -88,13 +96,15 @@ export default function AssetDetailScreen() {
 
         <View className="mb-2 mt-6 flex-row items-center justify-between">
           <Text className="text-lg font-semibold text-neutral-900 dark:text-white">Maintenance</Text>
-          <Pressable
-            onPress={() => router.push(`/task/new?assetId=${asset.id}`)}
-            accessibilityRole="button"
-            className="rounded-lg bg-brand-600/10 px-3 py-1.5 active:bg-brand-600/20"
-          >
-            <Text className="text-sm font-semibold text-brand-600 dark:text-brand-400">+ Add task</Text>
-          </Pressable>
+          {canCreateTask ? (
+            <Pressable
+              onPress={() => router.push(`/task/new?assetId=${asset.id}`)}
+              accessibilityRole="button"
+              className="rounded-lg bg-brand-600/10 px-3 py-1.5 active:bg-brand-600/20"
+            >
+              <Text className="text-sm font-semibold text-brand-600 dark:text-brand-400">+ Add task</Text>
+            </Pressable>
+          ) : null}
         </View>
       </View>
 
@@ -106,14 +116,14 @@ export default function AssetDetailScreen() {
           <TaskListItem
             task={item.task}
             dueInfo={item.dueInfo}
-            onPress={() => router.push(`/task/${item.task.id}`)}
-            onComplete={() => setTaskToComplete(item.task)}
+            onPress={canEditTask ? () => router.push(`/task/${item.task.id}`) : undefined}
+            onComplete={canCompleteTask ? () => setTaskToComplete(item.task) : undefined}
           />
         )}
         ListEmptyComponent={
           <View className="items-center py-12">
             <Text className="mb-4 text-base text-neutral-500 dark:text-neutral-400">No maintenance tasks yet.</Text>
-            <Button label="Add a task" onPress={() => router.push(`/task/new?assetId=${asset.id}`)} />
+            {canCreateTask ? <Button label="Add a task" onPress={() => router.push(`/task/new?assetId=${asset.id}`)} /> : null}
           </View>
         }
       />
