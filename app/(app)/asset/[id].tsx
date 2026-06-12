@@ -1,13 +1,16 @@
 import { useQuery } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { FlatList, Pressable, Text, View } from 'react-native';
 
+import { UpdateMileageModal } from '@/components/assets/UpdateMileageModal';
+import { CompleteTaskModal } from '@/components/tasks/CompleteTaskModal';
 import { LoadingScreen } from '@/components/ui/LoadingScreen';
 import { Screen } from '@/components/ui/Screen';
 import { TaskListItem } from '@/components/tasks/TaskListItem';
 import { vehicleDetails } from '@/core/domain/assets';
 import { compareDueInfo, getTaskDueInfo } from '@/core/domain/dueDate';
+import type { MaintenanceTask } from '@/core/domain/types';
 import { useDatabase } from '@/lib/db/DatabaseProvider';
 import { getAsset } from '@/lib/db/repositories/assets';
 import { listTasksForAsset } from '@/lib/db/repositories/maintenanceTasks';
@@ -17,6 +20,8 @@ import { queryKeys } from '@/lib/query/keys';
 export default function AssetDetailScreen() {
   const db = useDatabase();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const [taskToComplete, setTaskToComplete] = useState<MaintenanceTask | null>(null);
+  const [isUpdatingMileage, setIsUpdatingMileage] = useState(false);
 
   const assetQuery = useQuery({
     queryKey: queryKeys.asset(id),
@@ -31,6 +36,7 @@ export default function AssetDetailScreen() {
   });
 
   const asset = assetQuery.data;
+  const vehicle = asset ? vehicleDetails(asset) : undefined;
 
   const items = useMemo(() => {
     const tasks = tasksQuery.data ?? [];
@@ -69,6 +75,16 @@ export default function AssetDetailScreen() {
           ))}
         </View>
 
+        {vehicle ? (
+          <Pressable
+            onPress={() => setIsUpdatingMileage(true)}
+            accessibilityRole="button"
+            className="mt-3 self-start rounded-lg bg-brand-600/10 px-3 py-1.5 active:bg-brand-600/20"
+          >
+            <Text className="text-sm font-semibold text-brand-600 dark:text-brand-400">Update mileage</Text>
+          </Pressable>
+        ) : null}
+
         <Text className="mb-2 mt-6 text-lg font-semibold text-neutral-900 dark:text-white">Maintenance</Text>
       </View>
 
@@ -76,13 +92,37 @@ export default function AssetDetailScreen() {
         data={items}
         keyExtractor={(item) => item.task.id}
         contentContainerClassName="px-6 pb-6"
-        renderItem={({ item }) => <TaskListItem task={item.task} dueInfo={item.dueInfo} />}
+        renderItem={({ item }) => (
+          <TaskListItem
+            task={item.task}
+            dueInfo={item.dueInfo}
+            onComplete={() => setTaskToComplete(item.task)}
+          />
+        )}
         ListEmptyComponent={
           <View className="items-center py-12">
             <Text className="text-base text-neutral-500 dark:text-neutral-400">No maintenance tasks yet.</Text>
           </View>
         }
       />
+
+      {taskToComplete ? (
+        <CompleteTaskModal
+          task={taskToComplete}
+          asset={asset}
+          visible={!!taskToComplete}
+          onClose={() => setTaskToComplete(null)}
+        />
+      ) : null}
+
+      {vehicle ? (
+        <UpdateMileageModal
+          asset={asset}
+          details={vehicle}
+          visible={isUpdatingMileage}
+          onClose={() => setIsUpdatingMileage(false)}
+        />
+      ) : null}
     </Screen>
   );
 }
